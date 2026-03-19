@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Windstar Bingo</title>
+    <style>
+        :root {
+            --navy: #1A2238;
+            --oyster: #F4F1EA;
+            --gold: #C5A059;
+            --champagne: #E7D7C1;
+            --white: #FFFFFF;
+            --text: #2D3436;
+            --accent: #9B7E46;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--oyster);
+            color: var(--text);
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        /* Header Branding */
+        header {
+            background: var(--white);
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--champagne);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 {
+            font-family: serif;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--navy);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0.5rem;
+            padding-bottom: 5rem;
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            background: var(--champagne);
+            border-radius: 50px;
+            padding: 4px;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+            cursor: pointer;
+            border-radius: 50px;
+            transition: var(--transition);
+            z-index: 1;
+        }
+
+        .tab-btn.active {
+            color: var(--white);
+        }
+
+        .tab-indicator {
+            position: absolute;
+            height: calc(100% - 8px);
+            width: calc(50% - 4px);
+            background: var(--navy);
+            border-radius: 50px;
+            transition: transform 0.3s ease;
+            top: 4px;
+            left: 4px;
+        }
+
+        .tab-btn:last-child.active ~ .tab-indicator {
+            transform: translateX(100%);
+        }
+
+        /* Views Logic */
+        #bingo-view, #hunt-view {
+            display: none;
+        }
+
+        .view-active {
+            display: block !important;
+        }
+
+        /* Bingo Grid */
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1 / 1;
+            background: var(--white);
+            border: 1px solid var(--champagne);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        @media (min-width: 480px) {
+            .bingo-cell { font-size: 0.8rem; padding: 8px; }
+            .bingo-grid { gap: 8px; }
+        }
+
+        .bingo-cell.marked {
+            background: var(--navy);
+            color: var(--white);
+            border-color: var(--navy);
+            transform: scale(0.96);
+        }
+
+        .bingo-cell.free-space {
+            background: var(--gold);
+            color: var(--white);
+            font-weight: 800;
+            font-size: 0.75rem;
+            border-color: var(--gold);
+        }
+
+        /* Scavenger List */
+        .scavenger-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .scavenger-item {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--champagne);
+            transition: var(--transition);
+        }
+
+        .scavenger-item.checked {
+            border-left-color: var(--gold);
+            opacity: 0.8;
+        }
+
+        .scavenger-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--gold);
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .checked .checkbox {
+            background: var(--gold);
+        }
+
+        .checked .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .stats-bar {
+            background: var(--navy);
+            color: var(--white);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .reset-btn {
+            background: var(--gold);
+            color: var(--white);
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            width: 100%;
+            margin-top: 2rem;
+            box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+            cursor: pointer;
+            transition: transform 0.1s active, background 0.3s;
+        }
+
+        .reset-btn:active {
+            transform: scale(0.98);
+            background: var(--accent);
+        }
+
+        .reset-btn.clicked {
+            animation: pulse 0.4s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); opacity: 0.8; }
+            100% { transform: scale(1); }
+        }
+
+        /* Confetti */
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Winner Modal */
+        #win-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 34, 56, 0.95);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--white);
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .win-card {
+            background: var(--white);
+            color: var(--navy);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            max-width: 85%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti"></canvas>
+
+    <header>
+        <h1>Windstar Bingo</h1>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-bingo" onclick="switchView('bingo')">Bingo Grid</button>
+            <button class="tab-btn" id="btn-hunt" onclick="switchView('hunt')">Scavenger Hunt</button>
+            <div class="tab-indicator" id="tabIndicator"></div>
+        </div>
+
+        <div id="bingo-view" class="view-active">
+            <div class="bingo-grid" id="bingo-grid"></div>
+        </div>
+
+        <div id="hunt-view">
+            <div class="stats-bar">
+                <span>Spotted</span>
+                <span id="hunt-stats">0 / 34</span>
+            </div>
+            <div id="hunt-container" class="scavenger-list-container"></div>
+        </div>
+
+        <button class="reset-btn" id="main-reset-btn" onclick="handleResetClick()">Start Fresh Journey</button>
+    </div>
+
+    <div id="win-overlay">
+        <div class="win-card">
+            <h2 style="font-family:serif; font-size: 2.8rem; margin:0;">BINGO!</h2>
+            <p style="text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 2rem; font-weight: bold;">Exquisite Spotting!</p>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 2rem;">Your card has been reset for a new journey.</p>
+            <button class="reset-btn" style="margin-top: 0;" onclick="closeWinOverlay()">Next Round</button>
+        </div>
+    </div>
+
+    <script>
+        const SPOTTER_LIST = [
+            "Ample Bosomed Lady", "Man in Long White Pants (Day)", "Man in a Cravat",
+            "Ridiculously Wide Brimmed Sun Hat", "Lady Crying Alone at the Bar",
+            "Nautical Inspired Navy Blazer", "Mango Espadrilles", "Matching Custom T-Shirts",
+            "Non-Ironic Captain’s Hat", "Terrible Lip Filler Job", "Ratty Hair Extensions",
+            "Botched Plastic Surgery", "Faded and Stretched Tattoo", "Anything Versace",
+            "Invisible 'Invisible' Socks", "The Buffet Commando", "Toes in 'Formal Wear'",
+            "Lanyard Chic", "Sunburn 'T-Shirt'", "The Lido Legend", "Sequins at Breakfast",
+            "Aggressive Pattern Mixing", "The 'I’m with the Band' Groupie",
+            "White Linen 'Transparency'", "Designer Logo Overkill", "The 'Towel Reserved' Chair",
+            "Stiletto vs. Decking", "The 'Vegas' Cowboy", "Over-Accessorized Snorkeler",
+            "'Irony-Free' Fanny Pack", "The Retired Pirate", "Gothic in the Tropics",
+            "The Matching Family 'Sea-Sickness'", "Selfie-Stick Collision"
+        ];
+
+        let gameState = {
+            view: 'bingo',
+            bingoSeed: [],
+            bingoMarked: [], 
+            huntSpotted: [] 
+        };
+
+        let confettiActive = false;
+        let confettiTimer = null;
+
+        window.onload = () => {
+            loadState();
+            initConfetti();
+        };
+
+        function saveState() {
+            localStorage.setItem('windstarBingoState', JSON.stringify(gameState));
+            updateStats();
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('windstarBingoState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+            } else {
+                shuffleBingo();
+            }
+            switchView(gameState.view);
+            renderBingo();
+            renderHunt();
+        }
+
+        function shuffleBingo() {
+            const shuffled = [...SPOTTER_LIST].sort(() => 0.5 - Math.random());
+            gameState.bingoSeed = shuffled.slice(0, 24);
+            gameState.bingoMarked = [];
+        }
+
+        function handleResetClick() {
+            const btn = document.getElementById('main-reset-btn');
+            
+            // Visual feedback
+            btn.classList.add('clicked');
+            const originalText = btn.innerText;
+            btn.innerText = "Refreshing Voyage...";
+            
+            // Execute reset
+            setTimeout(() => {
+                shuffleBingo();
+                gameState.huntSpotted = [];
+                saveState();
+                renderBingo();
+                renderHunt();
+                
+                // Revert button state
+                btn.classList.remove('clicked');
+                btn.innerText = originalText;
+            }, 300);
+        }
+
+        function resetGame() {
+            // Deprecated in favor of handleResetClick for UI feedback, 
+            // but kept for win-modal compatibility if needed.
+            shuffleBingo();
+            gameState.huntSpotted = [];
+            saveState();
+            renderBingo();
+            renderHunt();
+        }
+
+        function switchView(view) {
+            gameState.view = view;
+            const bView = document.getElementById('bingo-view');
+            const hView = document.getElementById('hunt-view');
+            const btnB = document.getElementById('btn-bingo');
+            const btnH = document.getElementById('btn-hunt');
+            const indicator = document.getElementById('tabIndicator');
+
+            if (view === 'bingo') {
+                bView.classList.add('view-active');
+                hView.classList.remove('view-active');
+                btnB.classList.add('active');
+                btnH.classList.remove('active');
+                indicator.style.transform = "translateX(0%)";
+            } else {
+                bView.classList.remove('view-active');
+                hView.classList.add('view-active');
+                btnB.classList.remove('active');
+                btnH.classList.add('active');
+                indicator.style.transform = "translateX(100%)";
+            }
+            saveState();
+        }
+
+        function renderBingo() {
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = '';
+            
+            let itemIdx = 0;
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                
+                if (i === 12) {
+                    cell.classList.add('free-space', 'marked');
+                    cell.innerText = "FREE CHAMPAGNE";
+                } else {
+                    const text = gameState.bingoSeed[itemIdx];
+                    cell.innerText = text;
+                    const pos = i;
+                    if (gameState.bingoMarked.includes(pos)) cell.classList.add('marked');
+                    cell.onclick = () => toggleBingo(pos);
+                    itemIdx++;
+                }
+                grid.appendChild(cell);
+            }
+        }
+
+        function toggleBingo(idx) {
+            const index = gameState.bingoMarked.indexOf(idx);
+            if (index > -1) {
+                gameState.bingoMarked.splice(index, 1);
+            } else {
+                gameState.bingoMarked.push(idx);
+                checkBingoWin();
+            }
+            saveState();
+            renderBingo();
+        }
+
+        function checkBingoWin() {
+            const winningLines = [
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                [0,6,12,18,24], [4,8,12,16,20]
+            ];
+
+            const markedSet = new Set([...gameState.bingoMarked, 12]);
+            const isWin = winningLines.some(line => line.every(pos => markedSet.has(pos)));
+
+            if (isWin) {
+                triggerWin();
+                shuffleBingo();
+                saveState();
+                renderBingo();
+            }
+        }
+
+        function renderHunt() {
+            const container = document.getElementById('hunt-container');
+            container.innerHTML = '';
+            
+            SPOTTER_LIST.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'scavenger-item';
+                if (gameState.huntSpotted.includes(item)) div.classList.add('checked');
+                div.innerHTML = `<span class="scavenger-text">${item}</span><div class="checkbox"></div>`;
+                div.onclick = () => toggleHunt(item);
+                container.appendChild(div);
+            });
+            updateStats();
+        }
+
+        function toggleHunt(item) {
+            const index = gameState.huntSpotted.indexOf(item);
+            if (index > -1) {
+                gameState.huntSpotted.splice(index, 1);
+            } else {
+                gameState.huntSpotted.push(item);
+            }
+            saveState();
+            renderHunt();
+        }
+
+        function updateStats() {
+            const huntStats = document.getElementById('hunt-stats');
+            if (huntStats) huntStats.innerText = `${gameState.huntSpotted.length} / ${SPOTTER_LIST.length}`;
+        }
+
+        // --- Confetti Logic (Quick Burst) ---
+
+        let particles = [];
+        const canvas = document.getElementById('confetti');
+        const ctx = canvas.getContext('2d');
+        let animationFrame;
+
+        function initConfetti() {
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function triggerWin() {
+            document.getElementById('win-overlay').style.display = 'flex';
+            particles = [];
+            confettiActive = true;
+            
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: [ '#C5A059', '#1A2238', '#E7D7C1', '#FFFFFF' ][Math.floor(Math.random() * 4)],
+                    speed: Math.random() * 5 + 3,
+                    angle: Math.random() * 6.28,
+                    rotationSpeed: Math.random() * 0.2
+                });
+            }
+
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            updateConfetti();
+
+            if (confettiTimer) clearTimeout(confettiTimer);
+            confettiTimer = setTimeout(() => {
+                confettiActive = false;
+            }, 3000);
+        }
+
+        function updateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let particlesVisible = false;
+            particles.forEach((p) => {
+                p.y += p.speed;
+                p.angle += p.rotationSpeed;
+                
+                ctx.fillStyle = p.color;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore();
+
+                if (p.y < canvas.height) particlesVisible = true;
+            });
+
+            if (confettiActive || particlesVisible) {
+                animationFrame = requestAnimationFrame(updateConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function closeWinOverlay() {
+            document.getElementById('win-overlay').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
